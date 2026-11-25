@@ -1,0 +1,42 @@
+# Segredos e credenciais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+credentials*.json
+service-account*.json
+
+# Dados que podem conter informações pessoais
+dados-sensiveis/
+dados-brutos/
+*.sqlite
+*.db
+*.csv
+*.xls
+*.xlsx
+!exemplo*.csv
+!exemplo*.xlsx
+
+# Dependências e ambientes
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Arquivos gerados
+dist/
+build/
+.cache/
+*.log
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+~$*

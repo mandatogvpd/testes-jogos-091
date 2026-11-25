@@ -1,0 +1,5 @@
+{
+  "projeto": "nome-do-projeto-sem-espacos",
+  "build": "npm run build",
+  "saida": "dist"
+}

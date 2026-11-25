@@ -1,0 +1,88 @@
+# Publica o projeto na Cloudflare Pages SOMENTE se existir o arquivo publicar.json
+# na raiz do repositório. Sem esse arquivo, este fluxo não faz nada.
+name: Publicar na Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ler publicar.json
+        id: cfg
+        run: |
+          if [ ! -f publicar.json ]; then
+            echo "Sem publicar.json: projeto não publicado."
+            echo "habilitado=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          projeto=$(jq -r '.projeto // empty' publicar.json)
+          saida=$(jq -r '.saida // empty' publicar.json)
+          build=$(jq -r '.build // empty' publicar.json)
+          if ! echo "$projeto" | grep -Eq '^[a-z0-9][a-z0-9-]{0,56}$'; then
+            echo "::error::'projeto' deve ter só letras minúsculas, números e hífens."
+            exit 1
+          fi
+          if ! echo "$saida" | grep -Eq '^[A-Za-z0-9._/-]+$' || echo "$saida" | grep -q '\.\.'; then
+            echo "::error::'saida' inválida."
+            exit 1
+          fi
+          {
+            echo "habilitado=true"
+            echo "projeto=$projeto"
+            echo "saida=$saida"
+            echo "build=$build"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Conferir segredos da Cloudflare
+        if: steps.cfg.outputs.habilitado == 'true'
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CONTA: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CONTA" ]; then
+            echo "::error::Faltam os segredos CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID. Peça ao administrador da organização."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.habilitado == 'true'
+        with:
+          node-version: 22
+
+      - name: Build
+        if: steps.cfg.outputs.habilitado == 'true' && steps.cfg.outputs.build != ''
+        env:
+          BUILD: ${{ steps.cfg.outputs.build }}
+        run: |
+          if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; fi
+          bash -c "$BUILD"
+
+      - name: Criar projeto na Cloudflare (se ainda não existir)
+        if: steps.cfg.outputs.habilitado == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ${{ steps.cfg.outputs.projeto }} --production-branch=main
+
+      - name: Publicar
+        if: steps.cfg.outputs.habilitado == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ${{ steps.cfg.outputs.saida }} --project-name=${{ steps.cfg.outputs.projeto }} --branch=main
