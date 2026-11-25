@@ -1,6 +1,5 @@
-# Nome do projeto
+# Testes Jogos 091
 
-> Template do Mandato GVPD. Ao criar um projeto a partir dele, substitua este texto e preencha os campos abaixo.
 
 ## Objetivo
 <!-- Em uma ou duas frases: o que este projeto faz e para quem. -->
@@ -18,7 +17,9 @@
 <!-- Quais dados usa, de onde vêm e quais acessos são necessários. NÃO escreva senhas ou chaves aqui. -->
 
 ## Publicação
-<!-- Preencha só se o projeto for publicado: comando de build, pasta de saída, link público. Se não for publicado, escreva "Não publicado". -->
+- Comando de build: nenhum (HTML pronto)
+- Pasta de saída: `site` (contém só a página publicada)
+- Link público: https://testes-jogos-091.pages.dev
 
 ## Estrutura
 ```
